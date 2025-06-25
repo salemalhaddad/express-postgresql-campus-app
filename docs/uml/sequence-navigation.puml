@@ -1,0 +1,46 @@
+@startuml Navigation_Sequence_Diagram
+!theme plain
+title Navigation Sequence Diagram - Route Planning Process
+
+actor User
+participant Frontend
+participant "Navigation Controller" as NavCtrl
+participant "Building Service" as BuildingSvc
+participant "Navigation Service" as NavSvc
+participant Database
+participant "Map Service" as MapSvc
+
+User -> Frontend: Request directions
+Frontend -> NavCtrl: GET /api/navigation/directions?from=A&to=B
+NavCtrl -> BuildingSvc: findBuildingByCode(fromCode)
+BuildingSvc -> Database: SELECT building WHERE code = ?
+Database -> BuildingSvc: From building data
+BuildingSvc -> NavCtrl: From building coordinates
+
+NavCtrl -> BuildingSvc: findBuildingByCode(toCode)
+BuildingSvc -> Database: SELECT building WHERE code = ?
+Database -> BuildingSvc: To building data
+BuildingSvc -> NavCtrl: To building coordinates
+
+NavCtrl -> NavSvc: calculateRoute(from, to, options)
+NavSvc -> MapSvc: findOptimalPath(coordinates, accessible)
+MapSvc -> MapSvc: Calculate distance and time
+
+alt Direct path available
+    MapSvc -> NavSvc: Direct route data
+    NavSvc -> NavCtrl: Route with waypoints
+    NavCtrl -> Frontend: Route data with coordinates
+    Frontend -> User: Display route on map
+else Complex routing needed
+    MapSvc -> Database: SELECT map_paths for intermediate points
+    Database -> MapSvc: Path segments
+    MapSvc -> MapSvc: Compute shortest path algorithm
+    MapSvc -> NavSvc: Multi-segment route
+    NavSvc -> NavCtrl: Complex route data
+    NavCtrl -> Frontend: Route with multiple waypoints
+    Frontend -> User: Display complex route
+end
+
+Frontend -> User: Show estimated time and distance
+
+@enduml

@@ -1,0 +1,32 @@
+@startuml Authentication_Sequence_Diagram
+!theme plain
+title Authentication Sequence Diagram - User Login Process
+
+actor User
+participant Frontend
+participant "Auth Controller" as AuthCtrl
+participant "User Service" as UserSvc
+participant Database
+participant "JWT Service" as JWT
+
+User -> Frontend: Enter credentials
+Frontend -> AuthCtrl: POST /api/auth/login
+AuthCtrl -> UserSvc: validateCredentials(email, password)
+UserSvc -> Database: SELECT user WHERE email = ?
+Database -> UserSvc: User data
+UserSvc -> UserSvc: bcrypt.compare(password, hash)
+
+alt Valid credentials
+    UserSvc -> JWT: generateToken(user)
+    JWT -> UserSvc: JWT token
+    UserSvc -> AuthCtrl: {success: true, user, token}
+    AuthCtrl -> Frontend: {success: true, data: {user, token}}
+    Frontend -> Frontend: localStorage.setItem('token', token)
+    Frontend -> User: Login successful
+else Invalid credentials
+    UserSvc -> AuthCtrl: {success: false, error: "Invalid credentials"}
+    AuthCtrl -> Frontend: 401 Unauthorized
+    Frontend -> User: Login failed
+end
+
+@enduml

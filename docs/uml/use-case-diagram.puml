@@ -1,0 +1,116 @@
+@startuml SCNFBS_Use_Case_Diagram
+!theme plain
+title Smart Campus Navigation and Facility Booking System - Use Case Diagram
+
+left to right direction
+
+actor Student
+actor Faculty
+actor Staff
+actor Administrator
+actor Visitor
+
+rectangle "SCNFBS System" {
+  usecase "Register Account" as UC1
+  usecase "Login/Logout" as UC2
+  usecase "View Campus Map" as UC3
+  usecase "Search Buildings" as UC4
+  usecase "Get Directions" as UC5
+  usecase "Search Available Rooms" as UC6
+  usecase "Book Study Room" as UC7
+  usecase "View Booking History" as UC8
+  usecase "Manage Profile" as UC9
+  usecase "Book Lecture Hall" as UC10
+  usecase "Book Laboratory" as UC11
+  usecase "View Reports" as UC12
+  usecase "Manage Room Settings" as UC13
+  usecase "Configure Buildings" as UC14
+  usecase "Manage Users" as UC15
+  usecase "Generate System Reports" as UC16
+  usecase "Configure System Settings" as UC17
+  usecase "Cancel Booking" as UC18
+  usecase "Send Notifications" as UC19
+}
+
+' Student capabilities
+Student --> UC1
+Student --> UC2
+Student --> UC3
+Student --> UC4
+Student --> UC5
+Student --> UC6
+Student --> UC7
+Student --> UC8
+Student --> UC9
+Student --> UC18
+
+' Visitor capabilities  
+Visitor --> UC1
+Visitor --> UC2
+Visitor --> UC3
+Visitor --> UC4
+Visitor --> UC5
+Visitor --> UC6
+
+' Faculty inherits Student capabilities + additional
+Faculty --> UC1
+Faculty --> UC2
+Faculty --> UC3
+Faculty --> UC4
+Faculty --> UC5
+Faculty --> UC6
+Faculty --> UC7
+Faculty --> UC8
+Faculty --> UC9
+Faculty --> UC18
+Faculty --> UC10
+Faculty --> UC11
+Faculty --> UC12
+
+' Staff inherits Faculty capabilities + additional
+Staff --> UC1
+Staff --> UC2
+Staff --> UC3
+Staff --> UC4
+Staff --> UC5
+Staff --> UC6
+Staff --> UC7
+Staff --> UC8
+Staff --> UC9
+Staff --> UC18
+Staff --> UC10
+Staff --> UC11
+Staff --> UC12
+Staff --> UC13
+
+' Administrator has all capabilities
+Administrator --> UC1
+Administrator --> UC2
+Administrator --> UC3
+Administrator --> UC4
+Administrator --> UC5
+Administrator --> UC6
+Administrator --> UC7
+Administrator --> UC8
+Administrator --> UC9
+Administrator --> UC18
+Administrator --> UC10
+Administrator --> UC11
+Administrator --> UC12
+Administrator --> UC13
+Administrator --> UC14
+Administrator --> UC15
+Administrator --> UC16
+Administrator --> UC17
+
+' System relationships
+UC7 ..> UC19 : <<includes>>
+UC10 ..> UC19 : <<includes>>
+UC11 ..> UC19 : <<includes>>
+UC18 ..> UC19 : <<includes>>
+
+UC6 ..> UC2 : <<extends>>
+UC7 ..> UC2 : <<extends>>
+UC8 ..> UC2 : <<extends>>
+
+@enduml

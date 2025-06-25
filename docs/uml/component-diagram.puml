@@ -1,0 +1,146 @@
+@startuml Component_Diagram
+!theme plain
+title Smart Campus Navigation and Facility Booking System - Component Diagram
+
+package "Frontend Layer" {
+    [Web Browser] as Browser
+    [Mobile Web App] as Mobile
+    [Admin Dashboard] as Admin
+}
+
+package "API Gateway" {
+    [Express.js Router] as Router
+    [Authentication Middleware] as AuthMW
+    [Rate Limiting] as RateLimit
+    [CORS Handler] as CORS
+}
+
+package "Application Services" {
+    [Authentication Service] as AuthSvc
+    [User Management Service] as UserSvc
+    [Building Service] as BuildingSvc
+    [Room Service] as RoomSvc
+    [Booking Service] as BookingSvc
+    [Navigation Service] as NavSvc
+    [Notification Service] as NotifSvc
+    [Audit Service] as AuditSvc
+}
+
+package "Data Access Layer" {
+    [User Repository] as UserRepo
+    [Building Repository] as BuildingRepo
+    [Room Repository] as RoomRepo
+    [Booking Repository] as BookingRepo
+    [Audit Repository] as AuditRepo
+}
+
+package "External Services" {
+    [Email Service] as EmailSvc
+    [SMS Service] as SMSSvc
+    [File Storage] as FileStore
+}
+
+package "Database Layer" {
+    database "PostgreSQL\n(Supabase)" as DB
+    [Connection Pool] as Pool
+    [Query Builder] as QB
+}
+
+package "Security Components" {
+    [JWT Handler] as JWT
+    [Password Hasher] as PwdHash
+    [Input Validator] as Validator
+    [Sanitizer] as Sanitizer
+}
+
+' Frontend connections
+Browser --> Router : HTTPS/REST API
+Mobile --> Router : HTTPS/REST API
+Admin --> Router : HTTPS/REST API
+
+' API Gateway internal connections
+Router --> AuthMW
+Router --> RateLimit
+Router --> CORS
+AuthMW --> JWT
+
+' API Gateway to Services
+Router --> AuthSvc
+Router --> UserSvc
+Router --> BuildingSvc
+Router --> RoomSvc
+Router --> BookingSvc
+Router --> NavSvc
+
+' Service interconnections
+AuthSvc --> UserSvc
+AuthSvc --> JWT
+AuthSvc --> PwdHash
+BookingSvc --> RoomSvc
+BookingSvc --> NotifSvc
+BookingSvc --> AuditSvc
+UserSvc --> AuditSvc
+RoomSvc --> BuildingSvc
+
+' Services to Repositories
+AuthSvc --> UserRepo
+UserSvc --> UserRepo
+BuildingSvc --> BuildingRepo
+RoomSvc --> RoomRepo
+BookingSvc --> BookingRepo
+AuditSvc --> AuditRepo
+
+' Repositories to Database
+UserRepo --> Pool
+BuildingRepo --> Pool
+RoomRepo --> Pool
+BookingRepo --> Pool
+AuditRepo --> Pool
+Pool --> DB
+Pool --> QB
+
+' External service connections
+NotifSvc --> EmailSvc
+NotifSvc --> SMSSvc
+BuildingSvc --> FileStore
+
+' Security component usage
+UserSvc --> Validator
+BookingSvc --> Validator
+RoomSvc --> Validator
+AuthSvc --> Sanitizer
+UserSvc --> Sanitizer
+
+' Component interfaces
+interface "REST API" as RestAPI
+interface "Database Interface" as DBInterface
+interface "Authentication Interface" as AuthInterface
+interface "Notification Interface" as NotifInterface
+
+Router - RestAPI
+Pool - DBInterface
+JWT - AuthInterface
+NotifSvc - NotifInterface
+
+note right of DB
+  Primary data store
+  - User accounts
+  - Building/Room data
+  - Booking records
+  - Audit logs
+end note
+
+note top of AuthMW
+  JWT token validation
+  Role-based access control
+  Session management
+end note
+
+note bottom of BookingSvc
+  Business logic for:
+  - Availability checking
+  - Conflict resolution
+  - Booking lifecycle
+end note
+
+@enduml

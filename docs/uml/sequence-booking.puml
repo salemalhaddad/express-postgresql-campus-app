@@ -1,0 +1,47 @@
+@startuml Booking_Sequence_Diagram
+!theme plain
+title Booking Sequence Diagram - Room Booking Process
+
+actor Student
+participant Frontend
+participant "Booking Controller" as BookingCtrl
+participant "Room Service" as RoomSvc
+participant "Booking Service" as BookingSvc
+participant Database
+participant "Notification Service" as NotifSvc
+
+Student -> Frontend: Search available rooms
+Frontend -> BookingCtrl: GET /api/rooms/available?params
+BookingCtrl -> RoomSvc: findAvailableRooms(criteria)
+RoomSvc -> Database: Complex availability query
+Database -> RoomSvc: Available rooms list
+RoomSvc -> BookingCtrl: Room data with availability
+BookingCtrl -> Frontend: Available rooms response
+Frontend -> Student: Display available rooms
+
+Student -> Frontend: Select room and book
+Frontend -> BookingCtrl: POST /api/bookings
+BookingCtrl -> BookingCtrl: validateAuthToken()
+BookingCtrl -> BookingSvc: createBooking(bookingData)
+BookingSvc -> Database: BEGIN TRANSACTION
+
+BookingSvc -> Database: Check room availability (with lock)
+Database -> BookingSvc: Room status
+
+alt Room available
+    BookingSvc -> Database: INSERT INTO bookings
+    Database -> BookingSvc: Booking created
+    BookingSvc -> Database: COMMIT TRANSACTION
+    BookingSvc -> NotifSvc: sendBookingConfirmation(booking)
+    NotifSvc -> Student: Email confirmation
+    BookingSvc -> BookingCtrl: {success: true, booking}
+    BookingCtrl -> Frontend: Booking successful
+    Frontend -> Student: Booking confirmed
+else Room not available
+    BookingSvc -> Database: ROLLBACK TRANSACTION
+    BookingSvc -> BookingCtrl: {success: false, error: "Room unavailable"}
+    BookingCtrl -> Frontend: 409 Conflict
+    Frontend -> Student: Booking failed - room unavailable
+end
+
+@enduml

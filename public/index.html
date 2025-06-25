@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Navigation & Booking System</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>SCNFBS</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#navigation" class="nav-link">Navigation</a>
+                <a href="#booking" class="nav-link">Booking</a>
+                <a href="#facilities" class="nav-link">Facilities</a>
+            </div>
+            <div class="nav-auth">
+                <button id="loginBtn" class="btn btn-outline">Login</button>
+                <button id="registerBtn" class="btn btn-primary">Register</button>
+                <div id="userMenu" class="user-menu hidden">
+                    <span id="userName" class="user-name"></span>
+                    <button id="logoutBtn" class="btn btn-outline">Logout</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <!-- Home Section -->
+        <section id="home" class="section hero">
+            <div class="hero-content">
+                <h1>Smart Campus Navigation & Facility Booking</h1>
+                <p>Navigate your campus efficiently and book facilities with ease</p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary btn-large" onclick="showSection('navigation')">
+                        <i class="fas fa-route"></i>
+                        Start Navigation
+                    </button>
+                    <button class="btn btn-outline btn-large" onclick="showSection('booking')">
+                        <i class="fas fa-calendar-plus"></i>
+                        Book Facility
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Section -->
+        <section id="navigation" class="section hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-route"></i> Campus Navigation</h2>
+                <p>Find your way around campus with interactive maps and turn-by-turn directions</p>
+            </div>
+            
+            <div class="navigation-container">
+                <div class="search-panel">
+                    <div class="search-group">
+                        <label for="fromLocation">From:</label>
+                        <input type="text" id="fromLocation" placeholder="Enter starting location">
+                        <button class="btn-icon" onclick="getCurrentLocation()">
+                            <i class="fas fa-location-arrow"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="search-group">
+                        <label for="toLocation">To:</label>
+                        <input type="text" id="toLocation" placeholder="Enter destination">
+                        <button class="btn-icon" onclick="searchBuildings()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="navigation-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="accessibleRoute">
+                            <span>Accessible route</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="indoorRoute">
+                            <span>Prefer indoor paths</span>
+                        </label>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="getDirections()">
+                        <i class="fas fa-directions"></i>
+                        Get Directions
+                    </button>
+                </div>
+                
+                <div class="map-container">
+                    <div id="campusMap" class="campus-map">
+                        <div id="interactiveMap" class="interactive-map">
+                            <!-- Campus buildings will be rendered here -->
+                        </div>
+                        
+                        <div id="routeInfo" class="route-info-overlay hidden">
+                            <h3><i class="fas fa-route"></i> Route Information</h3>
+                            <p id="routeDistance"></p>
+                            <p id="routeTime"></p>
+                            <p id="routeType"></p>
+                        </div>
+                    </div>
+                    
+                    <div id="directionsPanel" class="directions-panel hidden">
+                        <h3><i class="fas fa-route"></i> Directions</h3>
+                        <div id="directionsList" class="directions-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Booking Section -->
+        <section id="booking" class="section hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-calendar-plus"></i> Facility Booking</h2>
+                <p>Reserve study rooms, labs, and other campus facilities</p>
+            </div>
+            
+            <div class="booking-container">
+                <div class="booking-search">
+                    <div class="search-filters">
+                        <div class="filter-group">
+                            <label for="facilityType">Facility Type:</label>
+                            <select id="facilityType">
+                                <option value="">All Types</option>
+                                <option value="STUDY_ROOM">Study Room</option>
+                                <option value="LECTURE_HALL">Lecture Hall</option>
+                                <option value="LABORATORY">Laboratory</option>
+                                <option value="CONFERENCE_ROOM">Conference Room</option>
+                                <option value="SPORTS_VENUE">Sports Venue</option>
+                                <option value="LIBRARY_SPACE">Library Space</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="buildingSelect">Building:</label>
+                            <select id="buildingSelect">
+                                <option value="">All Buildings</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="capacity">Min Capacity:</label>
+                            <input type="number" id="capacity" min="1" placeholder="1">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="bookingDate">Date:</label>
+                            <input type="date" id="bookingDate">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="startTime">Start Time:</label>
+                            <input type="time" id="startTime">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="endTime">End Time:</label>
+                            <input type="time" id="endTime">
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="searchAvailableRooms()">
+                            <i class="fas fa-search"></i>
+                            Search Available
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="availableRooms" class="available-rooms">
+                    <div class="rooms-placeholder">
+                        <i class="fas fa-building"></i>
+                        <p>Select your criteria and search for available facilities</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Facilities Section -->
+        <section id="facilities" class="section hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-building"></i> Campus Facilities</h2>
+                <p>Browse all available campus buildings and facilities</p>
+            </div>
+            
+            <div class="facilities-container">
+                <div class="facilities-search">
+                    <input type="text" id="facilitiesSearch" placeholder="Search buildings or rooms...">
+                    <button class="btn btn-primary" onclick="searchFacilities()">
+                        <i class="fas fa-search"></i>
+                        Search
+                    </button>
+                </div>
+                
+                <div id="facilitiesList" class="facilities-list">
+                    <div class="facilities-placeholder">
+                        <i class="fas fa-university"></i>
+                        <p>Campus facilities will be displayed here</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Login</h3>
+                <button class="modal-close" onclick="closeModal('loginModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email:</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password:</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Register</h3>
+                <button class="modal-close" onclick="closeModal('registerModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name:</label>
+                            <input type="text" id="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name:</label>
+                            <input type="text" id="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Role:</label>
+                        <select id="role">
+                            <option value="STUDENT">Student</option>
+                            <option value="FACULTY">Faculty</option>
+                            <option value="STAFF">Staff</option>
+                            <option value="VISITOR">Visitor</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Book Facility</h3>
+                <button class="modal-close" onclick="closeModal('bookingModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="bookingDetails" class="booking-details"></div>
+                <form id="bookingForm">
+                    <div class="form-group">
+                        <label for="bookingPurpose">Purpose:</label>
+                        <textarea id="bookingPurpose" placeholder="Describe the purpose of your booking" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookingNotes">Additional Notes:</label>
+                        <textarea id="bookingNotes" placeholder="Any additional notes or requirements"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Confirm Booking</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

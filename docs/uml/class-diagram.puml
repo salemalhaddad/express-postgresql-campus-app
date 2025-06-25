@@ -1,0 +1,240 @@
+@startuml SCNFBS_Class_Diagram
+!theme plain
+title Smart Campus Navigation and Facility Booking System - Class Diagram
+
+enum UserRole {
+  STUDENT
+  FACULTY
+  STAFF
+  ADMINISTRATOR
+  VISITOR
+}
+
+enum RoomType {
+  STUDY_ROOM
+  LECTURE_HALL
+  LABORATORY
+  CONFERENCE_ROOM
+  SPORTS_VENUE
+  LIBRARY_SPACE
+  MEETING_ROOM
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+class User {
+  -userId: UUID
+  -username: String
+  -email: String
+  -passwordHash: String
+  -firstName: String
+  -lastName: String
+  -role: UserRole
+  -phone: String
+  -studentId: String
+  -employeeId: String
+  -isActive: Boolean
+  -lastLogin: DateTime
+  -createdAt: DateTime
+  -updatedAt: DateTime
+  --
+  +register(userData): User
+  +login(email, password): Boolean
+  +verifyPassword(password): Boolean
+  +updatePassword(newPassword): void
+  +updateProfile(profileData): void
+  +getBookings(): List<Booking>
+  +toJSON(): Object
+}
+
+class Building {
+  -buildingId: UUID
+  -code: String
+  -name: String
+  -address: String
+  -latitude: Decimal
+  -longitude: Decimal
+  -floors: Integer
+  -isAccessible: Boolean
+  -description: Text
+  -operatingHours: JSON
+  -createdAt: DateTime
+  -updatedAt: DateTime
+  --
+  +create(buildingData): Building
+  +findByCode(code): Building
+  +getRooms(filters): List<Room>
+  +getAvailableRooms(startTime, endTime): List<Room>
+  +getEntrances(): List<Entrance>
+  +addEntrance(entranceData): Entrance
+  +getUtilizationStats(startDate, endDate): Object
+  +calculateDistance(otherBuilding): Double
+}
+
+class Room {
+  -roomId: UUID
+  -buildingId: UUID
+  -roomNumber: String
+  -name: String
+  -type: RoomType
+  -capacity: Integer
+  -floor: Integer
+  -isAccessible: Boolean
+  -isBookable: Boolean
+  -isActive: Boolean
+  -description: Text
+  -hourlyRate: Decimal
+  -createdAt: DateTime
+  -updatedAt: DateTime
+  --
+  +create(roomData): Room
+  +findById(roomId): Room
+  +isAvailable(startTime, endTime): Boolean
+  +getBookings(startDate, endDate): List<Booking>
+  +getEquipment(): List<Equipment>
+  +addEquipment(equipmentData): Equipment
+  +calculateUtilization(period): Double
+}
+
+class Booking {
+  -bookingId: UUID
+  -roomId: UUID
+  -userId: UUID
+  -startTime: DateTime
+  -endTime: DateTime
+  -purpose: String
+  -status: BookingStatus
+  -notes: Text
+  -createdAt: DateTime
+  -updatedAt: DateTime
+  --
+  +create(bookingData): Booking
+  +findById(bookingId): Booking
+  +findByUser(userId): List<Booking>
+  +findByRoom(roomId, startDate, endDate): List<Booking>
+  +cancel(): void
+  +confirm(): void
+  +checkConflicts(): Boolean
+  +sendNotification(): void
+  +generateReceipt(): String
+}
+
+class Equipment {
+  -equipmentId: UUID
+  -roomId: UUID
+  -name: String
+  -type: String
+  -description: Text
+  -isWorking: Boolean
+  -createdAt: DateTime
+  -updatedAt: DateTime
+  --
+  +create(equipmentData): Equipment
+  +findByRoom(roomId): List<Equipment>
+  +updateStatus(isWorking): void
+}
+
+class Entrance {
+  -entranceId: UUID
+  -buildingId: UUID
+  -name: String
+  -latitude: Decimal
+  -longitude: Decimal
+  -floor: Integer
+  -isAccessible: Boolean
+  -isMain: Boolean
+  -operatingHours: JSON
+  -createdAt: DateTime
+  -updatedAt: DateTime
+  --
+  +create(entranceData): Entrance
+  +findByBuilding(buildingId): List<Entrance>
+  +findNearest(latitude, longitude): Entrance
+}
+
+class MapPath {
+  -pathId: UUID
+  -fromBuilding: UUID
+  -toBuilding: UUID
+  -distance: Integer
+  -estimatedTime: Integer
+  -pathType: String
+  -isAccessible: Boolean
+  -coordinates: JSON
+  -createdAt: DateTime
+  -updatedAt: DateTime
+  --
+  +create(pathData): MapPath
+  +findRoute(fromId, toId): MapPath
+  +calculateShortestPath(fromId, toId): List<MapPath>
+}
+
+class Notification {
+  -notificationId: UUID
+  -userId: UUID
+  -type: String
+  -title: String
+  -message: Text
+  -isRead: Boolean
+  -createdAt: DateTime
+  --
+  +create(notificationData): Notification
+  +findByUser(userId): List<Notification>
+  +markAsRead(): void
+  +sendEmail(): void
+  +sendPush(): void
+}
+
+class AuditLog {
+  -logId: UUID
+  -userId: UUID
+  -action: String
+  -entityType: String
+  -entityId: UUID
+  -oldValues: JSON
+  -newValues: JSON
+  -ipAddress: String
+  -userAgent: String
+  -createdAt: DateTime
+  --
+  +create(logData): AuditLog
+  +findByUser(userId): List<AuditLog>
+  +findByEntity(entityType, entityId): List<AuditLog>
+}
+
+' Relationships
+User ||--o{ Booking : makes
+User ||--o{ Notification : receives
+User ||--o{ AuditLog : generates
+
+Building ||--o{ Room : contains
+Building ||--o{ Entrance : has
+Building ||--o{ MapPath : connects
+
+Room ||--o{ Booking : booked_for
+Room ||--o{ Equipment : has
+
+Booking }o--|| User : belongs_to
+Booking }o--|| Room : reserves
+
+Equipment }o--|| Room : located_in
+
+Entrance }o--|| Building : belongs_to
+
+MapPath }o--|| Building : from
+MapPath }o--|| Building : to
+
+Notification }o--|| User : sent_to
+
+AuditLog }o--|| User : created_by
+
+User --> UserRole
+Room --> RoomType
+Booking --> BookingStatus
+
+@enduml
