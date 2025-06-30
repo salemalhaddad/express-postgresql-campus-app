@@ -247,12 +247,24 @@ function setDefaultBookingTime() {
     const currentHour = now.getHours();
     const nextHour = currentHour + 1;
     
-    document.getElementById('bookingDate').value = today;
-    document.getElementById('startTime').value = `${nextHour.toString().padStart(2, '0')}:00`;
-    document.getElementById('endTime').value = `${(nextHour + 1).toString().padStart(2, '0')}:00`;
+    // Set tomorrow's date if current time is late in the day
+    const targetDate = nextHour >= 23 ? 
+        new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
+        today;
+    
+    document.getElementById('bookingDate').value = targetDate;
+    document.getElementById('startTime').value = `${Math.min(nextHour, 23).toString().padStart(2, '0')}:00`;
+    document.getElementById('endTime').value = `${Math.min(nextHour + 1, 23).toString().padStart(2, '0')}:00`;
+    
+    console.log('Default booking time set:', {
+        date: targetDate,
+        startTime: `${Math.min(nextHour, 23).toString().padStart(2, '0')}:00`,
+        endTime: `${Math.min(nextHour + 1, 23).toString().padStart(2, '0')}:00`
+    });
 }
 
 async function searchAvailableRooms() {
+    console.log('searchAvailableRooms function called!');
     // Note: Search works without login for demo purposes
     
     const facilityType = document.getElementById('facilityType').value;
@@ -262,8 +274,10 @@ async function searchAvailableRooms() {
     const startTime = document.getElementById('startTime').value;
     const endTime = document.getElementById('endTime').value;
     
+    console.log('Search form values:', { facilityType, buildingId, capacity, date, startTime, endTime });
+    
     if (!date || !startTime || !endTime) {
-        showError('Please fill in all required fields');
+        showError('Please fill in all required fields (Date, Start Time, and End Time)');
         return;
     }
     
@@ -287,7 +301,11 @@ async function searchAvailableRooms() {
         if (buildingId) params.append('buildingId', buildingId);
         if (capacity) params.append('minCapacity', capacity);
         
-        const response = await apiCall(`/rooms/available?${params}`);
+        const url = `/rooms/available?${params}`;
+        console.log('Making API call to:', url);
+        
+        const response = await apiCall(url);
+        console.log('API response:', response);
         displayAvailableRooms(response.data, startDateTime, endDateTime);
         
     } catch (error) {
@@ -310,8 +328,8 @@ function displayAvailableRooms(rooms, startTime, endTime) {
         return;
     }
     
-    availableRooms.innerHTML = rooms.map(room => `
-        <div class="room-card" onclick="openBookingModal('${room.roomId}', '${startTime.toISOString()}', '${endTime.toISOString()}')">
+    const roomsHTML = rooms.map(room => `
+        <div class="room-card" data-room-id="${room.roomId}" data-start-time="${startTime.toISOString()}" data-end-time="${endTime.toISOString()}" style="cursor: pointer; user-select: none;">
             <div class="room-header">
                 <div class="room-title">${room.buildingName} - ${room.roomNumber}</div>
                 <div class="room-type">${room.type.replace('_', ' ')}</div>
@@ -339,30 +357,101 @@ function displayAvailableRooms(rooms, startTime, endTime) {
             ${room.description ? `<p class="mt-3">${room.description}</p>` : ''}
         </div>
     `).join('');
+    
+    availableRooms.innerHTML = roomsHTML;
+    
+    // Add click event listeners to all room cards
+    document.querySelectorAll('.room-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const roomId = this.dataset.roomId;
+            const startTimeStr = this.dataset.startTime;
+            const endTimeStr = this.dataset.endTime;
+            
+            console.log('Room card clicked via event listener:', { roomId, startTimeStr, endTimeStr });
+            
+            if (roomId && startTimeStr && endTimeStr) {
+                openBookingModal(roomId, startTimeStr, endTimeStr);
+            } else {
+                console.error('Missing room data:', { roomId, startTimeStr, endTimeStr });
+            }
+        });
+    });
 }
 
 function openBookingModal(roomId, startTime, endTime) {
+    console.log('openBookingModal called with:', { roomId, startTime, endTime });
+    console.log('Current user:', AppState.user);
+    
     if (!AppState.user) {
+        console.log('No user logged in, showing login modal');
         showError('Please login to book a room');
         showModal('loginModal');
         return;
     }
     
-    const room = AppState.rooms.find(r => r.roomId === roomId) || 
-                 document.querySelector(`[onclick*="${roomId}"]`);
+    // Find room data from the last search results or get from current page
+    let room = null;
+    
+    // Try to find room from available rooms displayed on the page
+    const roomCards = document.querySelectorAll('.room-card');
+    roomCards.forEach(card => {
+        if (card.onclick && card.onclick.toString().includes(roomId)) {
+            const roomTitle = card.querySelector('.room-title')?.textContent || '';
+            const roomType = card.querySelector('.room-type')?.textContent || '';
+            const capacity = card.querySelector('.room-detail span')?.textContent || '';
+            
+            // Parse the room data from the card
+            const [buildingName, roomNumber] = roomTitle.split(' - ');
+            room = {
+                roomId,
+                buildingName: buildingName || '',
+                roomNumber: roomNumber || '',
+                type: roomType || '',
+                capacity: capacity.replace('Capacity: ', '') || ''
+            };
+        }
+    });
+    
+    // Fallback if room not found in cards
+    if (!room) {
+        room = {
+            roomId,
+            buildingName: 'Building',
+            roomNumber: 'Room',
+            type: 'Room',
+            capacity: ''
+        };
+    }
     
     const bookingDetails = document.getElementById('bookingDetails');
     const start = new Date(startTime);
     const end = new Date(endTime);
+    const duration = Math.round((end - start) / (1000 * 60 * 60 * 100)) / 100; // More precise duration
     
     bookingDetails.innerHTML = `
         <div class="booking-summary">
             <h4>Booking Summary</h4>
             <div class="booking-info">
-                <div><strong>Room:</strong> ${room.buildingName || ''} - ${room.roomNumber || ''}</div>
-                <div><strong>Date:</strong> ${start.toLocaleDateString()}</div>
-                <div><strong>Time:</strong> ${start.toLocaleTimeString()} - ${end.toLocaleTimeString()}</div>
-                <div><strong>Duration:</strong> ${Math.round((end - start) / (1000 * 60 * 60))} hour(s)</div>
+                <div><strong>Room:</strong> ${room.buildingName} - ${room.roomNumber}</div>
+                <div><strong>Type:</strong> ${room.type.replace('_', ' ')}</div>
+                ${room.capacity ? `<div><strong>Capacity:</strong> ${room.capacity}</div>` : ''}
+                <div><strong>Date:</strong> ${start.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                })}</div>
+                <div><strong>Time:</strong> ${start.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit'
+                })} - ${end.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit'
+                })}</div>
+                <div><strong>Duration:</strong> ${duration} hour${duration !== 1 ? 's' : ''}</div>
             </div>
         </div>
     `;
@@ -847,3 +936,27 @@ window.addEventListener('resize', () => {
         }
     }
 });
+
+// Make functions globally accessible for onclick handlers
+window.searchAvailableRooms = searchAvailableRooms;
+window.showSection = showSection;
+window.openBookingModal = openBookingModal;
+window.searchFacilities = searchFacilities;
+
+// Add backup event listener for search button to ensure it works
+setTimeout(() => {
+    const searchButton = document.querySelector('button[onclick="searchAvailableRooms()"]');
+    if (searchButton) {
+        console.log('Adding backup event listener to search button');
+        searchButton.addEventListener('click', function(e) {
+            console.log('Search button clicked via backup event listener');
+            if (typeof searchAvailableRooms === 'function') {
+                searchAvailableRooms();
+            } else {
+                console.error('searchAvailableRooms function not found');
+            }
+        });
+    } else {
+        console.error('Search button not found');
+    }
+}, 1000);
